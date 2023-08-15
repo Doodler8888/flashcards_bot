@@ -5,7 +5,7 @@ author        = "wurfkreuz"
 description   = "A new awesome nimble package"
 license       = "MIT"
 srcDir        = "src"
-bin           = @["flashcard_bot"]
+bin           = @["flashcards_bot"]
 
 
 # Dependencies

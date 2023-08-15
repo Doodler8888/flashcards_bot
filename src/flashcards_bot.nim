@@ -1,8 +1,9 @@
-import httpclient, json, os
+import httpclient, json, os, ../pkg/message_functions/reply
 
 let botToken = getEnv("TG_API_TOKEN")
 let client = newHttpClient()  # Create a new HTTP client
 var offset = 0  # Initialize the offset
+
 
 while true:  # Loop indefinitely
   let url = "https://api.telegram.org/bot" & botToken & "/getUpdates?offset=" & $offset
@@ -12,24 +13,11 @@ while true:  # Loop indefinitely
   for update in updates["result"]:
     let updateId = update["update_id"].getInt
     let chatId = update["message"]["chat"]["id"].getInt
-
-    if "message" in update and not update["message"]["from"]["is_bot"].getBool:
-      # Send a response back to the user
-      let responseUrl = "https://api.telegram.org/bot" & botToken & "/sendMessage?chat_id=" & $chatId & "&text=Hello, I'm your bot!"
-      discard client.getContent(responseUrl)
-      offset = updateId + 1
-
-
-  
-
-
-
-
-
-
-
-
-
-  # 
-  #   if updateId >= offset:
-  #     offset = update["update_id"].getInt + 1
+    if "text" in update["message"]:
+      try:
+        let incomingMessage = update["message"]["text"].getStr
+        if incomingMessage == "/add" and not update["message"]["from"]["is_bot"].getBool:
+          reply.simpleResponse(chatId, "Added!")
+      except:
+        continue
+    offset = updateId + 1
