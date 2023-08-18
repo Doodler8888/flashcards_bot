@@ -2,10 +2,10 @@ import httpclient, json, os, ../pkg/message_functions/reply
 
 let botToken = getEnv("TG_API_TOKEN")
 let client = newHttpClient()  # Create a new HTTP client
-var offset = 0  # Initialize the offset
+var offset = 0
 
 
-while true:  # Loop indefinitely
+while true:
   let url = "https://api.telegram.org/bot" & botToken & "/getUpdates?offset=" & $offset
   let response = client.getContent(url)  # Send the request
   let updates = parseJson(response)  # Parse the JSON response
