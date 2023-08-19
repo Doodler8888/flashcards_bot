@@ -1,4 +1,4 @@
-import httpclient, json, os, ../pkg/message_functions/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection
+import httpclient, json, os, strutils, ../pkg/message_functions/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection
 
 proc main() =
 
@@ -28,20 +28,26 @@ proc main() =
       if "text" in update["message"]:
         try:
           let incomingMessage = update["message"]["text"].getStr
-          if incomingMessage == "add" and not update["message"]["from"]["is_bot"].getBool:
+          if incomingMessage.startsWith("/add") and not update["message"]["from"]["is_bot"].getBool:
             reply.simpleResponse(chatId, "Added!")
             echo "This is incomingMessage: " & incomingMessage
-            addMessage(conn, incomingMessage)
+            let textToAdd = incomingMessage[5..^1]
+            addMessage(conn, textToAdd)
           elif incomingMessage == "/list":
             getMessages(conn)
         except Exception:
           echo getCurrentExceptionMsg()
-      # if update["message"]["from"]["is_bot"].getBool:
-      #   offset = updateId + 1
-      # else:
       offset = updateId + 1
       echo "This is offset in the end of the loop: " & $offset
 
 
 main()
 
+
+
+# ^1: This is shorthand for "one index from the end of the string." 
+# The ^ operator in Nim is a convenient way to refer to indices from the 
+# end of a collection. So ^1 refers to the second-to-last index, ^2 to the 
+# third-to-last, and so on. Using ^0 would refer to the last index,
+# but since Nim slices are end-exclusive, we use ^1 to include the last 
+# character in the slice.
