@@ -33,8 +33,10 @@ proc main() =
             echo "This is incomingMessage: " & incomingMessage
             let textToAdd = incomingMessage[5..^1]
             addMessage(conn, textToAdd)
-          elif incomingMessage == "/list":
-            getMessages(conn)
+          # elif incomingMessage == "/list":
+          #   getMessages(conn)
+          elif incomingMessage == "/start" and not update["message"]["from"]["is_bot"].getBool:
+            sendButton(chatId, "Hello!")
         except Exception:
           echo getCurrentExceptionMsg()
       offset = updateId + 1
@@ -42,12 +44,3 @@ proc main() =
 
 
 main()
-
-
-
-# ^1: This is shorthand for "one index from the end of the string." 
-# The ^ operator in Nim is a convenient way to refer to indices from the 
-# end of a collection. So ^1 refers to the second-to-last index, ^2 to the 
-# third-to-last, and so on. Using ^0 would refer to the last index,
-# but since Nim slices are end-exclusive, we use ^1 to include the last 
-# character in the slice.
