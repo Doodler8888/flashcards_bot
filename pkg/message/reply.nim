@@ -17,15 +17,28 @@ proc simpleResponse*(chatId: int, message: string) =
   discard client.getContent(responseUrl)
 
 
-proc sendButton*(chatId: int, text: string) =
+proc inlineButton*(chatId: int, text: string, buttonText: string) =
   let payload = %*{
     "chat_id": chatId,
     "text": text,
     "reply_markup": {
       "inline_keyboard": [
-        [{"text": "Option 1", "callback_data": "1"}],
+        [{"text": buttonText, "callback_data": "1"}],
         # [{"text": "Option 2", "callback_data": "2"}]
       ]
+    }
+  }
+  let body = payload.pretty(2)
+  discard client.request(url, httpMethod = HttpPost, body = body, headers = headers)
+
+
+proc staticButton*(chatId: int, text: string, buttonText: string) =
+  let payload = %*{
+    "chat_id": chatId,
+    "text": text,
+    "reply_markup": {
+      "keyboard": [[{"text": buttonText}]],
+      "resize_keyboard": true
     }
   }
   let body = payload.pretty(2)

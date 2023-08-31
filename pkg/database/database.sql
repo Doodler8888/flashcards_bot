@@ -2,9 +2,13 @@
 
 -- \c mydatabase;
 
-CREATE TABLE messages(
+-- CREATE TYPE flashcard_category AS ENUM ('easy', 'medium', 'hard');
+
+CREATE TABLE flashcards(
   id SERIAL PRIMARY KEY,
-  text TEXT NOT NULL       --By using "NOT NULL" i expicitly tell that this column always going to have a value.
+  question TEXT,
+  answer TEXT,
+  category flashcard_category
 );
 
 -- +-----------------+
@@ -13,10 +17,16 @@ CREATE TABLE messages(
 -- |                 |
 -- |    messages     |
 -- |  +-----+-----+  |
--- |  | id  |text |  |
+-- |  | id  |ques |  |
 -- |  +-----+-----+  |
 -- |  |  1  | ... |  |
 -- |  |  2  | ... |  |
 -- |  | ... | ... |  |
 -- |                 |
 -- +-----------------+
+
+
+
+-- By using "NOT NULL" i expicitly tell that this column always going to have a value.
+-- For example, this implicates that both fields must be populated at the time of row insertion.
+-- So i wouldn't be able to use the /question and /answer commands separately.

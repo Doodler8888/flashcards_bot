@@ -1,4 +1,4 @@
-import httpclient, json, os, strutils, ../pkg/message_functions/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection
+import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection
 
 proc main() =
 
@@ -8,6 +8,8 @@ proc main() =
   let botToken = getEnv("TG_API_TOKEN")
   let client = newHttpClient()  # Create a new HTTP client
   var offset = 0
+  var questionId: int
+
 
   if testConnection(conn):
     echo "Connection is working!"
@@ -28,15 +30,18 @@ proc main() =
       if "text" in update["message"]:
         try:
           let incomingMessage = update["message"]["text"].getStr
-          if incomingMessage.startsWith("/add") and not update["message"]["from"]["is_bot"].getBool:
-            reply.simpleResponse(chatId, "Added!")
-            echo "This is incomingMessage: " & incomingMessage
-            let textToAdd = incomingMessage[5..^1]
-            addMessage(conn, textToAdd)
-          # elif incomingMessage == "/list":
-          #   getMessages(conn)
-          elif incomingMessage == "/start" and not update["message"]["from"]["is_bot"].getBool:
-            sendButton(chatId, "Hello!")
+          if incomingMessage.startsWith("/q") and not update["message"]["from"]["is_bot"].getBool:
+            simpleResponse(chatId, "Added!")
+            questionId = addQuestion(conn, incomingMessage[2..^1])
+          if incomingMessage.startsWith("/a") and not update["message"]["from"]["is_bot"].getBool:
+            simpleResponse(chatId, "Added!")
+            addAnswer(conn, incomingMessage[2..^1], questionId)
+          elif incomingMessage == "/list":
+            showFlashcards(conn)
+          # elif incomingMessage == "/start" and not update["message"]["from"]["is_bot"].getBool:
+          #   staticButton(chatId, startMessage, "Add")
+          else:
+            echo "Enter correct command"
         except Exception:
           echo getCurrentExceptionMsg()
       offset = updateId + 1
