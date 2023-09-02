@@ -32,17 +32,22 @@ proc main() =
         try:
           let incomingMessage = update["message"]["text"].getStr
           if incomingMessage.startsWith("/add") and not update["message"]["from"]["is_bot"].getBool:
-            questionId = addQuestion(conn, incomingMessage[2..^1])
+            questionId = addQuestion(conn, incomingMessage[5..^1])
             simpleResponse(chatId, "Write your answer:")
             questionMessage = true
           elif not incomingMessage.startsWith("/add") and questionMessage:
             addAnswer(conn, incomingMessage, questionId)
             questionMessage = false
+            simpleResponse(chatId, "Complete")
           elif incomingMessage.startsWith("/ask"):
             let randomQuestionRow = conn.getRow(sql"SELECT question FROM flashcards ORDER BY RANDOM() LIMIT 1")
-            let randomQuestion = randomQuestionRow[0]
-            var responseUrl = "https://api.telegram.org/bot" & botToken & "/sendMessage?chat_id=" & $chatId & "&text=" & randomQuestion
-            discard client.getContent(responseUrl)
+            echo "This is a random question row: ", randomQuestionRow
+            if randomQuestionRow.len > 0:
+              let randomQuestion = $randomQuestionRow[0]  
+              inlineButton(chatId, randomQuestion, "Show Answer")
+              echo "This is a random question: ", randomQuestion
+            else:
+              echo "The query returned an empty row."
 
           elif incomingMessage.startsWith("/list"):
             echo "Showing flashcards..."
@@ -56,3 +61,7 @@ proc main() =
 
 
 main()
+
+
+
+# $ sign is used for string casting. This can prevent problems with ambiguous data types.

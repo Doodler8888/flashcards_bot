@@ -2,7 +2,7 @@ import db_connector/db_postgres, strutils
 
 
 proc addQuestion*(conn: Dbconn, message: string): int =
-  let sqlQuery = sql"INSERT INTO flashcards(chat_id, question, category) VALUES(?, ?, 'hard') RETURNING id"
+  let sqlQuery = sql"INSERT INTO flashcards(question, category) VALUES(?, 'hard') RETURNING id"
   for row in conn.rows(sqlQuery, message):
     let id = row[0].parseInt
     echo "This is a question id: " & $id
