@@ -17,13 +17,13 @@ proc simpleResponse*(chatId: int, message: string) =
   discard client.getContent(responseUrl)
 
 
-proc inlineButton*(chatId: int, text: string, buttonText: string) =
+proc inlineButton*(chatId: int, text: string, buttonText: string, questionId: int) =
   let payload = %*{
     "chat_id": chatId,
     "text": text,
     "reply_markup": {
       "inline_keyboard": [
-        [{"text": buttonText, "callback_data": "1"}],
+        [{"text": buttonText, "callback_data": "show answer trigger|" & $questionId}],
         # [{"text": "Option 2", "callback_data": "2"}]
       ]
     }

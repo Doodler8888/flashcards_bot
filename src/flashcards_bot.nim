@@ -3,7 +3,7 @@ import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_c
 proc main() =
 
   let conn = open(dbHost, dbUser, dbPassword, dbName)
-  # defer: conn.close()  # The connection will be closed when exiting the current scope.
+  defer: conn.close()  # The connection will be closed when exiting the current scope.
   
   let botToken = getEnv("TG_API_TOKEN")
   let client = newHttpClient()  # Create a new HTTP client
@@ -27,8 +27,21 @@ proc main() =
     for update in updates["result"]:
       let updateId = update["update_id"].getInt
       echo "This is updateId: " & $updateId
-      let chatId = update["message"]["chat"]["id"].getInt
-      if "text" in update["message"]:
+      if "callback_query" in update:
+        let callbackData = update["callback_query"]["data"].getStr
+        let parts = callbackData.split("|")
+        let command = parts[0]
+        questionId = parts[1].parseInt
+        let chatIdFromQuery = update["callback_query"]["message"]["chat"]["id"].getInt
+        if command == "show answer trigger":
+          echo "Current question id: " & $questionId
+          showAnswer(conn, questionId, chatIdFromQuery)
+          echo "Button was pressed"
+        else:
+          echo "Unrecognized callback_data: ", callbackData
+
+      elif "text" in update["message"]:
+        let chatId = update["message"]["chat"]["id"].getInt
         try:
           let incomingMessage = update["message"]["text"].getStr
           if incomingMessage.startsWith("/add") and not update["message"]["from"]["is_bot"].getBool:
@@ -40,15 +53,17 @@ proc main() =
             questionMessage = false
             simpleResponse(chatId, "Complete")
           elif incomingMessage.startsWith("/ask"):
-            let randomQuestionRow = conn.getRow(sql"SELECT question FROM flashcards ORDER BY RANDOM() LIMIT 1")
+            let randomQuestionRow = conn.getRow(sql"SELECT id, question FROM flashcards ORDER BY RANDOM() LIMIT 1")
             echo "This is a random question row: ", randomQuestionRow
-            if randomQuestionRow.len > 0:
-              let randomQuestion = $randomQuestionRow[0]  
-              inlineButton(chatId, randomQuestion, "Show Answer")
-              echo "This is a random question: ", randomQuestion
+            if randomQuestionRow.len > 1:
+              let randomQuestion = $randomQuestionRow[1]  
+              questionId = randomQuestionRow[0].parseInt
+              inlineButton(chatId, randomQuestion, "Show Answer", questionId)
             else:
               echo "The query returned an empty row."
-
+            #   echo "This is a random question: ", randomQuestion
+            # else:
+            #   echo "The query returned an empty row."
           elif incomingMessage.startsWith("/list"):
             echo "Showing flashcards..."
             showFlashcards(conn)
@@ -61,7 +76,3 @@ proc main() =
 
 
 main()
-
-
-
-# $ sign is used for string casting. This can prevent problems with ambiguous data types.

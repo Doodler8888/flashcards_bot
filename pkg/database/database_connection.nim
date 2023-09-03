@@ -1,4 +1,4 @@
-import db_connector/db_postgres, strutils
+import db_connector/db_postgres, strutils, ../../pkg/message/reply
 
 
 proc addQuestion*(conn: Dbconn, message: string): int =
@@ -11,6 +11,15 @@ proc addQuestion*(conn: Dbconn, message: string): int =
 proc addAnswer*(conn: Dbconn, message: string, questionId: int) =
   let sqlQuery = sql"UPDATE flashcards SET answer = ? WHERE id = ?"
   conn.exec(sqlQuery, message, $questionId)
+
+proc showAnswer*(conn: Dbconn, questionId: int, chatId: int, #[ message: string ]#) =
+  let sqlQuery = sql"SELECT answer FROM flashcards WHERE id = ?"
+  let row = conn.getRow(sqlQuery, $questionId)
+  let message = row[0]
+  simpleResponse(chatId, message)
+  # var responseUrl = "https://api.telegram.org/bot" & botToken & "/sendMessage?chat_id=" & $chatId & "&text=" & message
+  # discard client.getContent(responseUrl)
+  echo message
 
 proc showFlashcards*(conn: Dbconn) =
   let rows = conn.getAllRows(sql"SELECT question, answer FROM flashcards")
