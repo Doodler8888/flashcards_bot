@@ -31,12 +31,17 @@ proc main() =
         let callbackData = update["callback_query"]["data"].getStr
         let parts = callbackData.split("|")
         let command = parts[0]
-        questionId = parts[1].parseInt
         let chatIdFromQuery = update["callback_query"]["message"]["chat"]["id"].getInt
-        if command == "show answer trigger":
-          echo "Current question id: " & $questionId
-          showAnswer(conn, questionId, chatIdFromQuery)
-          echo "Button was pressed"
+        if command == "show category":
+          circleButtons(chatIdFromQuery, "Choose Category:", questionId)
+        elif parts.len >= 2:
+          echo "Reached before parsing"
+          questionId = parts[1].parseInt
+          echo "Reached after parsing"
+          if command == "show answer trigger":
+            echo "Currenat question id: " & $questionId
+            showAnswer(conn, questionId, chatIdFromQuery)
+            echo "Button was pressed"
         else:
           echo "Unrecognized callback_data: ", callbackData
 
@@ -58,7 +63,8 @@ proc main() =
             if randomQuestionRow.len > 1:
               let randomQuestion = $randomQuestionRow[1]  
               questionId = randomQuestionRow[0].parseInt
-              inlineButton(chatId, randomQuestion, "Show Answer", questionId)
+              inlineButton(chatId, randomQuestion, "Show Answer", "Show Category", questionId)
+              # circleButtons(chatId, "Choose Category:", questionId)
             else:
               echo "The query returned an empty row."
             #   echo "This is a random question: ", randomQuestion

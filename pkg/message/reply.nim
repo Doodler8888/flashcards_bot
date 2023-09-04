@@ -17,19 +17,56 @@ proc simpleResponse*(chatId: int, message: string) =
   discard client.getContent(responseUrl)
 
 
-proc inlineButton*(chatId: int, text: string, buttonText: string, questionId: int) =
+proc inlineButton*(chatId: int, text: string, buttonText: string, buttonText2: string, questionId: int) =
   let payload = %*{
     "chat_id": chatId,
     "text": text,
     "reply_markup": {
       "inline_keyboard": [
         [{"text": buttonText, "callback_data": "show answer trigger|" & $questionId}],
-        # [{"text": "Option 2", "callback_data": "2"}]
+        [{"text": buttonText2, "callback_data": "show category|"}],
       ]
     }
   }
   let body = payload.pretty(2)
   discard client.request(url, httpMethod = HttpPost, body = body, headers = headers)
+
+
+proc circleButtons*(chatId: int, text: string, questionId: int) =
+  let payload = %*{
+    "chat_id": chatId,
+    "text": text,
+    "reply_markup": {
+      "keyboard": [
+        [
+          {"text": "🔴 Hard"},
+          {"text": "🟡 Medium"},
+          {"text": "🟢 Easy"}
+        ]
+      ],
+      "resize_keyboard": true
+    }
+  }
+  let body = payload.pretty(2)
+  discard client.request(url, httpMethod = HttpPost, body = body, headers = headers)
+
+
+# proc inlineButtonCircles*(chatId: int, text: string, questionId: int) =
+#   let payload = %*{
+#     "chat_id": chatId,
+#     "text": text,
+#     "reply_markup": {
+#       "keyboard": [
+#         [
+#           {"text": "🔴", "callback_data": "red|" & $questionId},
+#           {"text": "🟡", "callback_data": "yellow|" & $questionId},
+#           {"text": "🟢", "callback_data": "green|" & $questionId}
+#         ]
+#       ]
+#     }
+#   }
+#   let body = payload.pretty(2)
+#   discard client.request(url, httpMethod = HttpPost, body = body, headers = headers)
 
 
 proc staticButton*(chatId: int, text: string, buttonText: string) =

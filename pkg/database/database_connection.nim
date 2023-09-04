@@ -12,7 +12,7 @@ proc addAnswer*(conn: Dbconn, message: string, questionId: int) =
   let sqlQuery = sql"UPDATE flashcards SET answer = ? WHERE id = ?"
   conn.exec(sqlQuery, message, $questionId)
 
-proc showAnswer*(conn: Dbconn, questionId: int, chatId: int, #[ message: string ]#) =
+proc showAnswer*(conn: Dbconn, questionId: int, chatId: int) =
   let sqlQuery = sql"SELECT answer FROM flashcards WHERE id = ?"
   let row = conn.getRow(sqlQuery, $questionId)
   let message = row[0]
