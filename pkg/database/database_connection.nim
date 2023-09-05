@@ -87,4 +87,21 @@ proc readLastQuestionId*(): int =
     echo "File does not exist"
     return 0  # Default value if the file doesn't exist
 
+proc getTotalQuestions*(conn: DbConn): int =
+  let rowCount = conn.getRow(sql"SELECT COUNT(*) FROM flashcards") # The SQL COUNT() function retrieves the number of rows that match a specified condition.
+  return rowCount[0].parseInt
+
+proc minimalCount*(conn: DbConn): int =
+  let query = sql"SELECT MIN(id) FROM flashcards;"
+  let minRowCount = conn.getRow(query)
+  let intCount = minRowCount[0].parseInt
+  return intCount
+
+proc getAllIds*(conn: DbConn): seq[int] =
+  var allIDs = newSeq[int]()
+  let rows = conn.getAllRows(sql"SELECT id FROM flashcards")
+  for row in rows:
+    echo "from using getAllIDs: ", row
+    allIDs.add(row[0].parseInt)
+  return allIDs
 

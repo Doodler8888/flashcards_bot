@@ -1,4 +1,4 @@
-import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection
+import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection, random
 
 proc main() =
 
@@ -23,7 +23,21 @@ proc main() =
     let url = "https://api.telegram.org/bot" & botToken & "/getUpdates?offset=" & $offset
     let response = client.getContent(url)  # Send the request
     let updates = parseJson(response)  # Parse the JSON response
-    echo "This is offset in the start of the loop: " & $offset
+    let randomSleepTime = rand(10..30)
+    sleep(randomSleepTime * 1000)
+    echo "Sleeping for " & $randomSleepTime & " seconds..."
+    var allIds = getAllIds(conn)
+    let randomIndex = rand(0..allIds.high) # The .len function returns the number of elements in a sequence, but the index starts from 0. So if you have 5 elements in the sequence allIds, allIds.len will return 5, but the valid indices are 0, 1, 2, 3, 4. 
+    let selectedID = allIds[randomIndex]
+    # echo "This is offset in the start of the loop: " & $offset
+    # var weightedList: seq[int] = @[]
+    # for id, category in allIdsWithCategories:
+    #   var weight: int
+    #   case category
+    #   of "hard": weight = 3
+    #   of "medium": weight = 2
+    #   of "easy": weight = 1
+    #   else: weight = 0
   
     for update in updates["result"]:
       if questionId == 0:
@@ -89,14 +103,14 @@ proc main() =
               elif not incomingMessage.startsWith("/add") and questionMessage:
                 addAnswer(conn, incomingMessage, questionId)
                 questionMessage = false
-                simpleResponse(chatId, "Complete")
+                simpleResponse(chatId, "Flashcard created")
               elif incomingMessage.startsWith("/ask"):
                 let randomQuestionRow = conn.getRow(sql"SELECT id, question FROM flashcards ORDER BY RANDOM() LIMIT 1")
                 echo "This is a random question row: ", randomQuestionRow
                 if randomQuestionRow.len > 1:
                   let randomQuestion = $randomQuestionRow[1]  
                   questionId = randomQuestionRow[0].parseInt
-                  inlineButton(chatId, randomQuestion, "Show Answer", "Show Category", questionId)
+                  inlineButton(chatId, randomQuestion, "Show Answer", "Change Category", questionId)
                   # circleButtons(chatId, "Choose Category:", questionId)
                 else:
                   echo "The query returned an empty row."
