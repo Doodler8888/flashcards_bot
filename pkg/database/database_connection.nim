@@ -1,4 +1,4 @@
-import db_connector/db_postgres, strutils, ../../pkg/message/reply
+import db_connector/db_postgres, strutils, ../../pkg/message/reply, os
 
 
 proc addQuestion*(conn: Dbconn, message: string): int =
@@ -40,5 +40,51 @@ proc testConnection*(conn: Dbconn): bool =
     echo "An error occurred while testing the connection: ", getCurrentExceptionMsg()
   return false
 
+proc updateFlashcardCategory*(conn: DbConn, questionId: int, newCategory: string) =
+  let oldCategory = conn.getRow(sql"SELECT category FROM flashcards WHERE id = ?", questionId)
+  echo "Old category: ", $oldCategory
+  let query = sql"UPDATE flashcards SET category = ? WHERE id = ?"
+  conn.exec(query, newCategory, questionId)
+  let updatedCategory = conn.getRow(sql"SELECT category FROM flashcards WHERE id = ?", questionId)
+  echo "Updated category: ", $updatedCategory
+
+proc getFlashcardCategory*(conn: DbConn, questionId: int): string =
+  var category = ""
+  try:
+    let row = conn.getRow(sql"SELECT category FROM flashcards WHERE id = $1", questionId)
+    if row.len > 0:
+      category = $row[0]
+      echo "Current category of question ", questionId, " is ", category
+    else:
+      echo "No such flashcard with ID ", questionId
+  except Exception:
+    echo "Failed to get category: ", getCurrentExceptionMsg()
+  return category
+
+# proc getLatestQuestionId(conn: Dbconn): int =
+#   let sqlQuery = sql"SELECT id FROM flashcards ORDER BY id DESC LIMIT 1"
+#   for row in conn.rows(sqlQuery):
+#     let id = row[0].parseInt
+#     return id
+#   return 0  # return 0 if no rows are found
+
+proc saveLastQuestionId*(questionId: int) =
+  let f = open("last_question_id.txt", fmWrite)
+  f.writeLine($questionId)
+  f.close()
+
+proc readLastQuestionId*(): int =
+  if fileExists("last_question_id.txt"):
+    if getFileSize("last_question_id.txt") > 0:
+      let f = open("last_question_id.txt", fmRead)
+      let line = f.readLine()
+      f.close()
+      return line.parseInt
+    else:
+      echo "File is empty"
+      return 0
+  else:
+    echo "File does not exist"
+    return 0  # Default value if the file doesn't exist
 
 

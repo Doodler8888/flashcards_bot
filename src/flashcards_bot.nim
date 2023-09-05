@@ -10,6 +10,7 @@ proc main() =
   var offset = 0
   var questionId: int
   var questionMessage = false
+  var textCheck = false
 
 
   if testConnection(conn):
@@ -25,8 +26,12 @@ proc main() =
     echo "This is offset in the start of the loop: " & $offset
   
     for update in updates["result"]:
+      if questionId == 0:
+        questionId = readLastQuestionId()
+        echo "readLastQuestion activated"
+        echo "This is questionId: at the start of the loop: " & $questionId
       let updateId = update["update_id"].getInt
-      echo "This is updateId: " & $updateId
+      # echo "This is updateId: " & $updateId
       if "callback_query" in update:
         let callbackData = update["callback_query"]["data"].getStr
         let parts = callbackData.split("|")
@@ -44,41 +49,73 @@ proc main() =
             echo "Button was pressed"
         else:
           echo "Unrecognized callback_data: ", callbackData
-
-      elif "text" in update["message"]:
+      elif "message" in update:
         let chatId = update["message"]["chat"]["id"].getInt
-        try:
-          let incomingMessage = update["message"]["text"].getStr
-          if incomingMessage.startsWith("/add") and not update["message"]["from"]["is_bot"].getBool:
-            questionId = addQuestion(conn, incomingMessage[5..^1])
-            simpleResponse(chatId, "Write your answer:")
-            questionMessage = true
-          elif not incomingMessage.startsWith("/add") and questionMessage:
-            addAnswer(conn, incomingMessage, questionId)
-            questionMessage = false
-            simpleResponse(chatId, "Complete")
-          elif incomingMessage.startsWith("/ask"):
-            let randomQuestionRow = conn.getRow(sql"SELECT id, question FROM flashcards ORDER BY RANDOM() LIMIT 1")
-            echo "This is a random question row: ", randomQuestionRow
-            if randomQuestionRow.len > 1:
-              let randomQuestion = $randomQuestionRow[1]  
-              questionId = randomQuestionRow[0].parseInt
-              inlineButton(chatId, randomQuestion, "Show Answer", "Show Category", questionId)
-              # circleButtons(chatId, "Choose Category:", questionId)
-            else:
-              echo "The query returned an empty row."
-            #   echo "This is a random question: ", randomQuestion
-            # else:
-            #   echo "The query returned an empty row."
-          elif incomingMessage.startsWith("/list"):
-            echo "Showing flashcards..."
-            showFlashcards(conn)
+        let messageText = update["message"]["text"].getStr
+        var caseCheck = false
+        case messageText
+        of "🔴 Hard":
+          echo "Hard was selected"
+          # updateFlashcardCategory(conn, questionId, "hard")
+          if questionId != 0:  # Assuming 0 is an invalid value for questionId
+            echo "This is questionId: " & $questionId
+            updateFlashcardCategory(conn, questionId, "hard")
           else:
-            echo "Enter a correct command"
-        except Exception:
-          echo getCurrentExceptionMsg()
+            echo "questionId is not initialized."
+        of "🟡 Medium":
+          echo "Medium was selected"
+          if questionId != 0:  # Assuming 0 is an invalid value for questionId
+            echo "This is questionId: " & $questionId
+            updateFlashcardCategory(conn, questionId, "medium")
+          else:
+            echo "questionId is not initialized."
+        of "🟢 Easy":
+          echo "Easy was selected"
+          if questionId != 0:  # Assuming 0 is an invalid value for questionId
+            echo "This is questionId: " & $questionId
+            updateFlashcardCategory(conn, questionId, "easy")
+          else:
+            echo "questionId is not initialized."
+        else:
+          caseCheck = true
+        if "text" in update["message"] and caseCheck:
+            try:
+              textCheck = true
+              let incomingMessage = update["message"]["text"].getStr
+              if incomingMessage.startsWith("/add") and not update["message"]["from"]["is_bot"].getBool:
+                questionId = addQuestion(conn, incomingMessage[5..^1])
+                simpleResponse(chatId, "Write your answer:")
+                questionMessage = true
+              elif not incomingMessage.startsWith("/add") and questionMessage:
+                addAnswer(conn, incomingMessage, questionId)
+                questionMessage = false
+                simpleResponse(chatId, "Complete")
+              elif incomingMessage.startsWith("/ask"):
+                let randomQuestionRow = conn.getRow(sql"SELECT id, question FROM flashcards ORDER BY RANDOM() LIMIT 1")
+                echo "This is a random question row: ", randomQuestionRow
+                if randomQuestionRow.len > 1:
+                  let randomQuestion = $randomQuestionRow[1]  
+                  questionId = randomQuestionRow[0].parseInt
+                  inlineButton(chatId, randomQuestion, "Show Answer", "Show Category", questionId)
+                  # circleButtons(chatId, "Choose Category:", questionId)
+                else:
+                  echo "The query returned an empty row."
+                #   echo "This is a random question: ", randomQuestion
+                # else:
+                #   echo "The query returned an empty row."
+              elif incomingMessage.startsWith("/list"):
+                echo "Showing flashcards..."
+                showFlashcards(conn)
+              else:
+                echo "Enter a correct command"
+            except Exception:
+              echo getCurrentExceptionMsg()
+        else:
+          if not caseCheck and not textCheck:
+            echo "Unrecognized message: ", messageText
       offset = updateId + 1
       echo "This is offset in the end of the loop: " & $offset
+      saveLastQuestionId(questionId)
 
 
 main()
