@@ -1,4 +1,4 @@
-import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection, random
+import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection
 
 proc main() =
 
@@ -11,6 +11,8 @@ proc main() =
   var questionId: int
   var questionMessage = false
   var textCheck = false
+  var chatId = 0
+  var callBackCheck = false
 
 
   if testConnection(conn):
@@ -23,21 +25,12 @@ proc main() =
     let url = "https://api.telegram.org/bot" & botToken & "/getUpdates?offset=" & $offset
     let response = client.getContent(url)  # Send the request
     let updates = parseJson(response)  # Parse the JSON response
-    let randomSleepTime = rand(10..30)
-    sleep(randomSleepTime * 1000)
-    echo "Sleeping for " & $randomSleepTime & " seconds..."
-    var allIds = getAllIds(conn)
-    let randomIndex = rand(0..allIds.high) # The .len function returns the number of elements in a sequence, but the index starts from 0. So if you have 5 elements in the sequence allIds, allIds.len will return 5, but the valid indices are 0, 1, 2, 3, 4. 
-    let selectedID = allIds[randomIndex]
-    # echo "This is offset in the start of the loop: " & $offset
-    # var weightedList: seq[int] = @[]
-    # for id, category in allIdsWithCategories:
-    #   var weight: int
-    #   case category
-    #   of "hard": weight = 3
-    #   of "medium": weight = 2
-    #   of "easy": weight = 1
-    #   else: weight = 0
+    if not callBackCheck:
+      echo "Before calling the inlineButton " & $callBackCheck
+      let (rquestion, rquestionId) = questionToAsk(conn, chatId)
+      inlineButton(chatId, rquestion, "Show Answer", "Change Category", "Done", rquestionId)
+      callBackCheck = true
+      echo "After calling the inlineButton " & $callBackCheck
   
     for update in updates["result"]:
       if questionId == 0:
@@ -47,11 +40,17 @@ proc main() =
       let updateId = update["update_id"].getInt
       # echo "This is updateId: " & $updateId
       if "callback_query" in update:
+        callBackCheck = true
         let callbackData = update["callback_query"]["data"].getStr
         let parts = callbackData.split("|")
         let command = parts[0]
         let chatIdFromQuery = update["callback_query"]["message"]["chat"]["id"].getInt
-        if command == "show category":
+        if command == "Done":
+          try:
+            callBackCheck = false
+          except:
+            echo getCurrentExceptionMsg()
+        elif command == "show category":
           circleButtons(chatIdFromQuery, "Choose Category:", questionId)
         elif parts.len >= 2:
           echo "Reached before parsing"
@@ -64,7 +63,7 @@ proc main() =
         else:
           echo "Unrecognized callback_data: ", callbackData
       elif "message" in update:
-        let chatId = update["message"]["chat"]["id"].getInt
+        chatId = update["message"]["chat"]["id"].getInt
         let messageText = update["message"]["text"].getStr
         var caseCheck = false
         case messageText
@@ -105,21 +104,33 @@ proc main() =
                 questionMessage = false
                 simpleResponse(chatId, "Flashcard created")
               elif incomingMessage.startsWith("/ask"):
-                let randomQuestionRow = conn.getRow(sql"SELECT id, question FROM flashcards ORDER BY RANDOM() LIMIT 1")
-                echo "This is a random question row: ", randomQuestionRow
-                if randomQuestionRow.len > 1:
-                  let randomQuestion = $randomQuestionRow[1]  
-                  questionId = randomQuestionRow[0].parseInt
-                  inlineButton(chatId, randomQuestion, "Show Answer", "Change Category", questionId)
-                  # circleButtons(chatId, "Choose Category:", questionId)
+                let randomQuestionId = generateQuestionId(conn)
+                echo "This is a random question id: " & $randomQuestionId
+                let query = sql"SELECT question FROM flashcards WHERE id = ?"
+                let randomQuestionRow = conn.getRow(query, randomQuestionId)
+                echo "This is a random question row: ", $randomQuestionRow
+                echo "Length of randomQuestionRow: ", randomQuestionRow.len
+                if randomQuestionRow.len > 0:
+                  let randomQuestion = $randomQuestionRow[0]  
+                  inlineButton(chatId, randomQuestion, "Show Answer", "Change Category", "Done", randomQuestionId)
+                  echo "This is a random question: ", randomQuestion
                 else:
                   echo "The query returned an empty row."
+                # let randomQuestionRow = conn.getRow(sql"SELECT id, question FROM flashcards ORDER BY RANDOM() LIMIT 1")
+                # echo "This is a random question row: ", randomQuestionRow
+                # if randomQuestionRow.len > 1:
+                #   echo "Length of randomQuestionRow: ", randomQuestionRow.len
+                #   let randomQuestion = $randomQuestionRow[1]  
+                #   questionId = randomQuestionRow[0].parseInt
+                #   inlineButton(chatId, randomQuestion, "Show Answer", "Change Category", questionId)
                 #   echo "This is a random question: ", randomQuestion
                 # else:
                 #   echo "The query returned an empty row."
               elif incomingMessage.startsWith("/list"):
                 echo "Showing flashcards..."
                 showFlashcards(conn)
+              elif incomingMessage.startsWith("/start"):
+                callBackCheck = false
               else:
                 echo "Enter a correct command"
             except Exception:
@@ -127,6 +138,7 @@ proc main() =
         else:
           if not caseCheck and not textCheck:
             echo "Unrecognized message: ", messageText
+
       offset = updateId + 1
       echo "This is offset in the end of the loop: " & $offset
       saveLastQuestionId(questionId)
