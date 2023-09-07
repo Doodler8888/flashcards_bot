@@ -1,4 +1,4 @@
-import db_connector/db_postgres, strutils, ../../pkg/message/reply, os, #[ httpclient, ]# random, json
+import db_connector/db_postgres, strutils, ../../pkg/message/reply, os, random, json
 
 
 # let client = newHttpClient()
@@ -21,9 +21,6 @@ proc showAnswer*(conn: Dbconn, questionId: int, chatId: int) =
   let row = conn.getRow(sqlQuery, $questionId)
   let message = row[0]
   simpleResponse(chatId, message)
-  # var responseUrl = "https://api.telegram.org/bot" & botToken & "/sendMessage?chat_id=" & $chatId & "&text=" & message
-  # discard client.getContent(responseUrl)
-  echo message
 
 proc showFlashcards*(conn: Dbconn) =
   let rows = conn.getAllRows(sql"SELECT question, answer FROM flashcards")
@@ -127,6 +124,9 @@ proc activateCallback*(conn: DbConn, update: JsonNode, questionId: int) =
 proc generateQuestionId*(conn: Dbconn): int =
   var weightedList: seq[int]
   let allData = getAllIdsAndCategories(conn)
+  if alldata.len == 0:
+    echo "No data to generate a question."
+    return 0  # or some other way to signify there are no questions
   for (id, category) in allData:
     case category
     of "hard":

@@ -1,4 +1,4 @@
-import os, httpclient, json, random
+import os, httpclient, json, random, uri
 
 
 const botToken = getEnv("TG_API_TOKEN")
@@ -7,14 +7,15 @@ let client = newHttpClient()
 let url = "https://api.telegram.org/bot" & botToken & "/sendMessage"
 let headers = newHttpHeaders({"Content-Type": "application/json"})
 
-# let button = %*{
-#   "inline_keyboard": [[{"text": "Your Button Text", "callback_data": "your_callback_data"}]]
-# }
-
 
 proc simpleResponse*(chatId: int, message: string) =
-  var responseUrl = "https://api.telegram.org/bot" & botToken & "/sendMessage?chat_id=" & $chatId & "&text=" & message
-  discard client.getContent(responseUrl)
+  try:
+    let encodedMessage = encodeUrl(message)
+    var responseUrl = "https://api.telegram.org/bot" & botToken & "/sendMessage?chat_id=" & $chatId & "&text=" & encodedMessage
+    echo "chatId in simpleResponse: " & $chatId
+    discard client.getContent(responseUrl)
+  except Exception:
+    echo getCurrentExceptionMsg()
 
 
 proc inlineButton*(chatId: int, text: string, buttonText: string, buttonText2: string, buttonText3: string, questionId: int) =
@@ -56,6 +57,19 @@ proc randomSleep*(minSeconds: int, maxSeconds: int) =
   let sleepTime = rand(minSeconds..maxSeconds)
   echo "Sleeping for ", sleepTime, " seconds."
   sleep(sleepTime * 1000)
+
+
+proc makeRequest*() =
+  let url = "http://some.api.endpoint"
+  let headers = newHttpHeaders()
+  headers.add("Authorization", "Bearer your_token_here")
+  headers.add("Other-Header", "header_value")
+
+  # Log the URL and headers for debugging
+  echo "URL: ", url
+  echo "Headers: ", headers
+
+  discard getContent(client, url)
 
 
 
