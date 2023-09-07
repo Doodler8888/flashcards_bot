@@ -156,6 +156,7 @@ proc questionToAsk*(conn: DbConn, chatId: int): (string, int) =
   else:
     echo "No question found for the selected ID."
     return ("", 0)
+
 #
 #   let randomSleepTime = rand(10..30)
 #   sleep(randomSleepTime * 1000)

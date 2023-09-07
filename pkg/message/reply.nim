@@ -1,4 +1,4 @@
-import os, httpclient, json
+import os, httpclient, json, random
 
 
 const botToken = getEnv("TG_API_TOKEN")
@@ -50,6 +50,13 @@ proc circleButtons*(chatId: int, text: string, questionId: int) =
   }
   let body = payload.pretty(2)
   discard client.request(url, httpMethod = HttpPost, body = body, headers = headers)
+
+
+proc randomSleep*(minSeconds: int, maxSeconds: int) =
+  let sleepTime = rand(minSeconds..maxSeconds)
+  echo "Sleeping for ", sleepTime, " seconds."
+  sleep(sleepTime * 1000)
+
 
 
 # proc inlineButtonCircles*(chatId: int, text: string, questionId: int) =

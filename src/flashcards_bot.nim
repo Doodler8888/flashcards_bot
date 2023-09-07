@@ -1,10 +1,11 @@
-import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection
+import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection, ../pkg/async/time, asyncdispatch
 
-proc main() =
+proc main() {.async.} =
 
   let conn = open(dbHost, dbUser, dbPassword, dbName)
   defer: conn.close()  # The connection will be closed when exiting the current scope.
   
+  # var nextMutationTime: Time
   let botToken = getEnv("TG_API_TOKEN")
   let client = newHttpClient()  # Create a new HTTP client
   var offset = 0
@@ -46,10 +47,7 @@ proc main() =
         let command = parts[0]
         let chatIdFromQuery = update["callback_query"]["message"]["chat"]["id"].getInt
         if command == "Done":
-          try:
-            callBackCheck = false
-          except:
-            echo getCurrentExceptionMsg()
+          await handleDoneCommandAsync(chatId, addr callBackCheck)
         elif command == "show category":
           circleButtons(chatIdFromQuery, "Choose Category:", questionId)
         elif parts.len >= 2:
@@ -116,16 +114,6 @@ proc main() =
                   echo "This is a random question: ", randomQuestion
                 else:
                   echo "The query returned an empty row."
-                # let randomQuestionRow = conn.getRow(sql"SELECT id, question FROM flashcards ORDER BY RANDOM() LIMIT 1")
-                # echo "This is a random question row: ", randomQuestionRow
-                # if randomQuestionRow.len > 1:
-                #   echo "Length of randomQuestionRow: ", randomQuestionRow.len
-                #   let randomQuestion = $randomQuestionRow[1]  
-                #   questionId = randomQuestionRow[0].parseInt
-                #   inlineButton(chatId, randomQuestion, "Show Answer", "Change Category", questionId)
-                #   echo "This is a random question: ", randomQuestion
-                # else:
-                #   echo "The query returned an empty row."
               elif incomingMessage.startsWith("/list"):
                 echo "Showing flashcards..."
                 showFlashcards(conn)
@@ -144,4 +132,4 @@ proc main() =
       saveLastQuestionId(questionId)
 
 
-main()
+waitFor main()
