@@ -1,9 +1,9 @@
-import os, httpclient, json, random, uri
+import os, httpclient, json, random, uri, #[ ../async/time, ]# #[ asyncdispatch ]# chronos
 
 
 const botToken = getEnv("TG_API_TOKEN")
 
-let client = newHttpClient()
+let client = newHttpClient(timeout = 60_000)  # Create a new HTTP client
 let url = "https://api.telegram.org/bot" & botToken & "/sendMessage"
 let headers = newHttpHeaders({"Content-Type": "application/json"})
 
@@ -12,7 +12,7 @@ proc simpleResponse*(chatId: int, message: string) =
   try:
     let encodedMessage = encodeUrl(message)
     var responseUrl = "https://api.telegram.org/bot" & botToken & "/sendMessage?chat_id=" & $chatId & "&text=" & encodedMessage
-    echo "chatId in simpleResponse: " & $chatId
+    # echo "chatId in simpleResponse: " & $chatId
     discard client.getContent(responseUrl)
   except Exception:
     echo getCurrentExceptionMsg()
@@ -103,8 +103,25 @@ proc staticButton*(chatId: int, text: string, buttonText: string) =
   let body = payload.pretty(2)
   discard client.request(url, httpMethod = HttpPost, body = body, headers = headers)
 
+# proc delayAsync*(delayTime: int): Future[void] {.async.} =
+#   await sleepAsync(delayTime * 1000)
+#
+# proc ping*(chatId: int, client: HttpClient) {.async.} =
+#   while true:
+#     if chatId == 0:
+#       continue
+#     let responseUrl = "https://api.telegram.org/bot" & botToken & "/getMe"
+#     try:
+#       discard client.getContent(responseUrl)
+#       echo "ping"
+#     except Exception:
+#       echo getCurrentExceptionMsg()
+#     asyncCheck sleepAsync(60_000)  # delay for 60 seconds
 
-
+# proc callPingEvery60Seconds*(chatId: int) {.async.} =
+#   while true:
+#     await ping(chatId)
+#     await sleepAsync(60_000)  # wait for 60 seconds
 
 
 # %* operator is a Nim shorthand for parsing a JSON literal.

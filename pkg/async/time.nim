@@ -1,14 +1,45 @@
-import random, asyncdispatch, ../message/reply
+import random, asyncdispatch, ../message/reply, httpclient
 
+
+# let client = newHttpClient(timeout = 60_000)
+# const botToken = getEnv("TG_API_TOKEN")
 
 proc randomDelayAsync(minDelay: int, maxDelay: int): Future[void] {.async.} =
   let randomSec = rand(maxDelay - minDelay) + minDelay
   await sleepAsync(randomSec * 1000)
 
 proc handleDoneCommandAsync*(chatId: int, callBackCheck: ptr bool) {.async.} =
-  simpleResponse(chatId, "Confirmed")
+  try:
+    echo "Entering handleDoneCommandAsync for chatId ", chatId
+    simpleResponse(chatId, "Confirmed")
+    await randomDelayAsync(10, 25)
+    callBackCheck[] = false
+    echo "Exiting handleDoneCommandAsync for chatId ", chatId
+  except Exception:
+    echo "Exception in handleDoneCommandAsync: ", getCurrentExceptionMsg() 
+
+proc handleDonePingAsync*(chatId: int) {.async.} =
+  simpleResponse(chatId, "ping")
   await randomDelayAsync(10, 25)
-  callBackCheck[] = false
+
+proc delayAsync*(delayTime: int): Future[void] {.async.} =
+  await sleepAsync(delayTime * 1000)
+
+proc ping*(client: HttpClient, chatId: int, botToken: string) {.async.} =
+  while true:
+    # echo "empty ping"
+    # if chatId == 0:
+    #   return
+    let responseUrl = "https://api.telegram.org/bot" & botToken & "/getMe"
+    try:
+      let response = client.get(responseUrl)
+      if response.status == "200 OK":
+        echo "successful ping"
+      else:
+        echo "Received unexpected status code: ", response.status
+    except Exception:
+      echo "Exception in ping function: ", getCurrentExceptionMsg()
+    await sleepAsync(60_000)
 
 
 # For example, if minDelay is 10 and maxDelay is 20:

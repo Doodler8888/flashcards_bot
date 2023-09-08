@@ -6,13 +6,15 @@ proc main() {.async.} =
   defer: conn.close()  # The connection will be closed when exiting the current scope.
   
   let botToken = getEnv("TG_API_TOKEN")
-  let client = newHttpClient()  # Create a new HTTP client
+  let client = newHttpClient(timeout = 60_000)  # Create a new HTTP client
   var offset = 0
   var questionId: int
   var questionMessage = false
   var textCheck = false
   var chatId = 0
+  var chatIdFromQuery = 0
   var callBackCheck = false
+  var command = ""
 
 
   # if testConnection(conn):
@@ -21,7 +23,11 @@ proc main() {.async.} =
   #   echo "Connection failed!"
   
   
+  # await callPingEvery60Seconds(chatId)
+  # asyncCheck ping(client, chatId, botToken)
   while true:
+    # await sleepAsync(250)
+    # await handleDoneCommandAsync(chatId)
     let url = "https://api.telegram.org/bot" & botToken & "/getUpdates?offset=" & $offset
     # echo "url: " & url
     let response = client.getContent(url)  # Send the request
@@ -48,8 +54,9 @@ proc main() {.async.} =
         callBackCheck = true
         let callbackData = update["callback_query"]["data"].getStr
         let parts = callbackData.split("|")
-        let command = parts[0]
-        let chatIdFromQuery = update["callback_query"]["message"]["chat"]["id"].getInt
+        command = parts[0]
+        chatIdFromQuery = update["callback_query"]["message"]["chat"]["id"].getInt
+        echo chatIdFromQuery
         if command == "Done":
           await handleDoneCommandAsync(chatIdFromQuery, addr callBackCheck)
         elif command == "show category":

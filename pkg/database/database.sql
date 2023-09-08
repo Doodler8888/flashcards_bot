@@ -4,8 +4,6 @@
 
 -- CREATE TYPE flashcard_category AS ENUM ('easy', 'medium', 'hard');
 
--- ALTER TABLE flashcards ADD COLUMN chat_id INT;
-
 CREATE TABLE flashcards(
   id SERIAL PRIMARY KEY,
   question TEXT,
