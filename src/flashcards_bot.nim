@@ -24,9 +24,11 @@ proc main() {.async.} =
   
   
   # await callPingEvery60Seconds(chatId)
-  # asyncCheck ping(client, chatId, botToken)
+  asyncCheck ping(client, chatId, botToken)
+  # asyncCheck handleDoneCommandAsync(chatId, addr callBackCheck)
+
   while true:
-    # await sleepAsync(250)
+    await sleepAsync(250)
     # await handleDoneCommandAsync(chatId)
     let url = "https://api.telegram.org/bot" & botToken & "/getUpdates?offset=" & $offset
     # echo "url: " & url
@@ -56,8 +58,10 @@ proc main() {.async.} =
         let parts = callbackData.split("|")
         command = parts[0]
         chatIdFromQuery = update["callback_query"]["message"]["chat"]["id"].getInt
-        echo chatIdFromQuery
+        echo "chatIdFromQuery before the Done check: " & $chatIdFromQuery
         if command == "Done":
+          # callBackCheck = true
+          # echo "callBackCheck in the if statement check: " & $callBackCheck
           await handleDoneCommandAsync(chatIdFromQuery, addr callBackCheck)
         elif command == "show category":
           circleButtons(chatIdFromQuery, "Choose Category:", questionId)
@@ -130,6 +134,8 @@ proc main() {.async.} =
                 showFlashcards(conn)
               elif incomingMessage.startsWith("/start"):
                 callBackCheck = false
+              elif incomingMessage.startsWith("/stop"):
+                callBackCheck = true
               elif incomingMessage == "Confirmed":
                 continue
               else:

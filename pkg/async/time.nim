@@ -9,14 +9,17 @@ proc randomDelayAsync(minDelay: int, maxDelay: int): Future[void] {.async.} =
   await sleepAsync(randomSec * 1000)
 
 proc handleDoneCommandAsync*(chatId: int, callBackCheck: ptr bool) {.async.} =
-  try:
-    echo "Entering handleDoneCommandAsync for chatId ", chatId
+  echo "callBackCheck in the beginning: " & $callBackCheck[]
+  # while true:
+  # let chatId = chatId
+  echo "callBackCheck in the loop: " & $callBackCheck[]
+  if callBackCheck[]:
+    echo "chatId for simpleResponse: " & $chatId
     simpleResponse(chatId, "Confirmed")
     await randomDelayAsync(10, 25)
     callBackCheck[] = false
-    echo "Exiting handleDoneCommandAsync for chatId ", chatId
-  except Exception:
-    echo "Exception in handleDoneCommandAsync: ", getCurrentExceptionMsg() 
+    echo "callBackCheck in the end: " & $callBackCheck[]
+  await sleepAsync(1000)
 
 proc handleDonePingAsync*(chatId: int) {.async.} =
   simpleResponse(chatId, "ping")
@@ -39,7 +42,7 @@ proc ping*(client: HttpClient, chatId: int, botToken: string) {.async.} =
         echo "Received unexpected status code: ", response.status
     except Exception:
       echo "Exception in ping function: ", getCurrentExceptionMsg()
-    await sleepAsync(60_000)
+    await sleepAsync(5_000)
 
 
 # For example, if minDelay is 10 and maxDelay is 20:
