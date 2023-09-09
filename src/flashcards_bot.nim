@@ -1,4 +1,4 @@
-import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection, ../pkg/async/time, asyncdispatch
+import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection, ../pkg/async/time, asyncdispatch, times, random
 
 proc main() {.async.} =
 
@@ -6,15 +6,16 @@ proc main() {.async.} =
   defer: conn.close()  # The connection will be closed when exiting the current scope.
   
   let botToken = getEnv("TG_API_TOKEN")
-  let client = newHttpClient(timeout = 60_000)  # Create a new HTTP client
+  let client = newHttpClient(#[ timeout = 60_000 ]#)
   var offset = 0
   var questionId: int
   var questionMessage = false
   var textCheck = false
   var chatId = 0
   var chatIdFromQuery = 0
-  var callBackCheck = false
   var command = ""
+  var callBackCheck = false
+  var nextMutationTime: float = 0
 
 
   # if testConnection(conn):
@@ -23,26 +24,20 @@ proc main() {.async.} =
   #   echo "Connection failed!"
   
   
-  # await callPingEvery60Seconds(chatId)
-  asyncCheck ping(client, chatId, botToken)
-  # asyncCheck handleDoneCommandAsync(chatId, addr callBackCheck)
-
   while true:
     await sleepAsync(250)
-    # await handleDoneCommandAsync(chatId)
+    let currentTime = epochTime()
+    if currentTime >= nextMutationTime and nextMutationTime > 0:
+      callBackCheck = false  # Resetting callBackCheck
+      nextMutationTime = 0  # Reset nextMutationTime
+
     let url = "https://api.telegram.org/bot" & botToken & "/getUpdates?offset=" & $offset
-    # echo "url: " & url
     let response = client.getContent(url)  # Send the request
-    # echo "response: " & response
     let updates = parseJson(response)  # Parse the JSON response
     if not callBackCheck:
-      echo "Before calling the inlineButton " & $callBackCheck
-      echo "chatId before calling the inlineButton: " & $chatId
       let (rquestion, rquestionId) = questionToAsk(conn, chatId)
       inlineButton(chatId, rquestion, "Show Answer", "Change Category", "Done", rquestionId)
       callBackCheck = true
-      echo "After calling the inlineButton " & $callBackCheck
-      echo "chatId after calling the inlineButton: " & $chatId
   
     for update in updates["result"]:
       if questionId == 0:
@@ -60,9 +55,7 @@ proc main() {.async.} =
         chatIdFromQuery = update["callback_query"]["message"]["chat"]["id"].getInt
         echo "chatIdFromQuery before the Done check: " & $chatIdFromQuery
         if command == "Done":
-          # callBackCheck = true
-          # echo "callBackCheck in the if statement check: " & $callBackCheck
-          await handleDoneCommandAsync(chatIdFromQuery, addr callBackCheck)
+          nextMutationTime = currentTime + float(rand(10..25))
         elif command == "show category":
           circleButtons(chatIdFromQuery, "Choose Category:", questionId)
         elif parts.len >= 2:
@@ -125,6 +118,7 @@ proc main() {.async.} =
                 # echo "Length of randomQuestionRow: ", randomQuestionRow.len
                 if randomQuestionRow.len > 0:
                   let randomQuestion = $randomQuestionRow[0]  
+                  echo "chatId when using ask: " & $chatId & " and randomQuestionId: " & $randomQuestionId
                   inlineButton(chatId, randomQuestion, "Show Answer", "Change Category", "Done", randomQuestionId)
                   # echo "This is a random question: ", randomQuestion
                 else:
@@ -134,8 +128,8 @@ proc main() {.async.} =
                 showFlashcards(conn)
               elif incomingMessage.startsWith("/start"):
                 callBackCheck = false
-              elif incomingMessage.startsWith("/stop"):
-                callBackCheck = true
+              # elif incomingMessage.startsWith("/stop"):
+              #   callBackCheck = true
               elif incomingMessage == "Confirmed":
                 continue
               else:

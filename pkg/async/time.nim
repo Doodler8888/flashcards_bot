@@ -8,18 +8,18 @@ proc randomDelayAsync(minDelay: int, maxDelay: int): Future[void] {.async.} =
   let randomSec = rand(maxDelay - minDelay) + minDelay
   await sleepAsync(randomSec * 1000)
 
+proc handleDoneCommand*(chatId: int, callBackCheck: bool) =
+  if callBackCheck:
+    simpleResponse(chatId, "Confirmed")
+
+
 proc handleDoneCommandAsync*(chatId: int, callBackCheck: ptr bool) {.async.} =
-  echo "callBackCheck in the beginning: " & $callBackCheck[]
-  # while true:
-  # let chatId = chatId
-  echo "callBackCheck in the loop: " & $callBackCheck[]
   if callBackCheck[]:
-    echo "chatId for simpleResponse: " & $chatId
     simpleResponse(chatId, "Confirmed")
     await randomDelayAsync(10, 25)
     callBackCheck[] = false
     echo "callBackCheck in the end: " & $callBackCheck[]
-  await sleepAsync(1000)
+  # await sleepAsync(1000)
 
 proc handleDonePingAsync*(chatId: int) {.async.} =
   simpleResponse(chatId, "ping")
@@ -33,6 +33,7 @@ proc ping*(client: HttpClient, chatId: int, botToken: string) {.async.} =
     # echo "empty ping"
     # if chatId == 0:
     #   return
+    echo "Check how frequently the while loop inside ping function runs"
     let responseUrl = "https://api.telegram.org/bot" & botToken & "/getMe"
     try:
       let response = client.get(responseUrl)
@@ -42,7 +43,7 @@ proc ping*(client: HttpClient, chatId: int, botToken: string) {.async.} =
         echo "Received unexpected status code: ", response.status
     except Exception:
       echo "Exception in ping function: ", getCurrentExceptionMsg()
-    await sleepAsync(5_000)
+    await sleepAsync(120_000)
 
 
 # For example, if minDelay is 10 and maxDelay is 20:

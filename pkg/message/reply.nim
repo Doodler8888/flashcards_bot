@@ -30,8 +30,22 @@ proc inlineButton*(chatId: int, text: string, buttonText: string, buttonText2: s
       ]
     }
   }
+  var attempts = 0
   let body = payload.pretty(2)
-  discard client.request(url, httpMethod = HttpPost, body = body, headers = headers)
+  while attempts < 3:
+    try:
+      let answer = client.request(url, httpMethod = HttpPost, body = body, headers = headers)
+      if answer.status == "200 OK":
+        break
+      else:
+        echo "Received unexpected status code: ", answer.status
+    except Exception:
+      echo getCurrentExceptionMsg()
+    attempts += 1
+    if attempts == 3:
+      echo "Request failed after 3 attempts."
+
+
 
 
 proc circleButtons*(chatId: int, text: string, questionId: int) =
