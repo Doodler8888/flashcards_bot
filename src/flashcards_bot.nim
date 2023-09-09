@@ -1,6 +1,6 @@
-import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection, ../pkg/async/time, asyncdispatch, times, random
+import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection, ../pkg/async/time, times, random
 
-proc main() {.async.} =
+proc main() =
 
   let conn = open(dbHost, dbUser, dbPassword, dbName)
   defer: conn.close()  # The connection will be closed when exiting the current scope.
@@ -25,7 +25,6 @@ proc main() {.async.} =
   
   
   while true:
-    await sleepAsync(250)
     let currentTime = epochTime()
     if currentTime >= nextMutationTime and nextMutationTime > 0:
       callBackCheck = false  # Resetting callBackCheck
@@ -55,7 +54,7 @@ proc main() {.async.} =
         chatIdFromQuery = update["callback_query"]["message"]["chat"]["id"].getInt
         echo "chatIdFromQuery before the Done check: " & $chatIdFromQuery
         if command == "Done":
-          nextMutationTime = currentTime + float(rand(10..25))
+          nextMutationTime = currentTime + float(rand(4000..6020))
         elif command == "show category":
           circleButtons(chatIdFromQuery, "Choose Category:", questionId)
         elif parts.len >= 2:
@@ -145,4 +144,4 @@ proc main() {.async.} =
       saveLastQuestionId(questionId)
 
 
-waitFor main()
+main()

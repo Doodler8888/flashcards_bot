@@ -1,4 +1,4 @@
-import os, httpclient, json, random, uri, #[ ../async/time, ]# #[ asyncdispatch ]# chronos
+import os, httpclient, json, random, uri, times
 
 
 const botToken = getEnv("TG_API_TOKEN")
@@ -44,6 +44,7 @@ proc inlineButton*(chatId: int, text: string, buttonText: string, buttonText2: s
     attempts += 1
     if attempts == 3:
       echo "Request failed after 3 attempts."
+      echo  "This is current time ", now()
 
 
 
