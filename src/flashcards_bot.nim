@@ -1,4 +1,4 @@
-import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection, ../pkg/async/time, times, random
+import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection, times, random
 
 proc main() =
 
@@ -55,6 +55,7 @@ proc main() =
         echo "chatIdFromQuery before the Done check: " & $chatIdFromQuery
         if command == "Done":
           nextMutationTime = currentTime + float(rand(4000..6020))
+          simpleResponse(chatIdFromQuery, "Confirmed!")
         elif command == "show category":
           circleButtons(chatIdFromQuery, "Choose Category:", questionId)
         elif parts.len >= 2:
@@ -103,6 +104,8 @@ proc main() =
               if incomingMessage.startsWith("/add") and not update["message"]["from"]["is_bot"].getBool:
                 questionId = addQuestion(conn, incomingMessage[5..^1])
                 simpleResponse(chatId, "Write your answer:")
+                if not update["message"]["text"].getStr.startsWith("Write"):
+                  simpleResponse(chatId, "Write your answer:")
                 questionMessage = true
               elif not incomingMessage.startsWith("/add") and questionMessage:
                 addAnswer(conn, incomingMessage, questionId)

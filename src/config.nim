@@ -1,6 +1,6 @@
 import parsetoml
 
-let config = parseFile("../config.toml")
+let config = parseFile("config.toml")
 
 let dbHost* = config["dbHost"].getStr
 let dbName* = config["dbName"].getStr
