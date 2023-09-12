@@ -1,11 +1,9 @@
 stages:
-  - test
+  - sync
 
-test_job:
-  stage: test
-  image: nimlang/nim:latest-alpine
+sync_to_github:
+  stage: sync
   script:
-    - nim --version
-    - echo 'echo "Hello, world!"' > hello.nim
-    - nim c -r hello.nim
+    - git remote add github https://$GITHUB_PAT:x-oauth-basic@github.com/YourUsername/YourRepo.git
+    - git push github HEAD:main  # Replace 'main' with your target branch if different
 
