@@ -4,6 +4,5 @@ stages:
 sync_to_github:
   stage: sync
   script:
-    - git remote add github https://$GITHUB_PAT:x-oauth-basic@github.com/YourUsername/YourRepo.git
-    - git push github HEAD:main  # Replace 'main' with your target branch if different
+    - git push origin master  # Replace 'main' with your target branch if different
 
