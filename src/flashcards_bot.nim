@@ -1,4 +1,4 @@
-import httpclient, json, os, strutils, ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection, times, random
+import std/[httpclient, json, os, strutils, times, random], ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection
 
 proc main() =
 

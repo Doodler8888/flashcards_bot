@@ -1,0 +1,11 @@
+stages:
+  - test
+
+test_job:
+  stage: test
+  image: nimlang/nim:latest-alpine
+  script:
+    - nim --version
+    - echo 'echo "Hello, world!"' > hello.nim
+    - nim c -r hello.nim
+
