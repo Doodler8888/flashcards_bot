@@ -9,5 +9,5 @@ WORKDIR /app
 
 COPY . /app
 
-#
+
 RUN nimble install -y -d:release flashcards
