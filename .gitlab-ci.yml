@@ -4,5 +4,5 @@ stages:
 sync_to_github:
   stage: sync
   script:
-    echo "Syncing to GitHub"
+    echo "Syncing to GitHub1"
 
