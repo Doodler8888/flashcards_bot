@@ -4,5 +4,8 @@ stages:
 sync_to_github:
   stage: sync
   script:
+    - git status  # Show the current Git status for debugging
+    - git branch  # Show the available branches for debugging
+    - git remote -v  # Show configured remotes for debugging
     - git push origin master  # Replace 'main' with your target branch if different
 
