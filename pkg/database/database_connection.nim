@@ -1,10 +1,6 @@
 import db_connector/db_postgres, strutils, ../../pkg/message/reply, os, random, json
 
 
-# let client = newHttpClient()
-# const botToken = getEnv("TG_API_TOKEN")
-
-
 proc addQuestion*(conn: Dbconn, message: string): int =
   let sqlQuery = sql"INSERT INTO flashcards(question, category) VALUES(?, 'hard') RETURNING id"
   for row in conn.rows(sqlQuery, message):
@@ -61,13 +57,6 @@ proc getFlashcardCategory*(conn: DbConn, questionId: int): string =
   except Exception:
     echo "Failed to get category: ", getCurrentExceptionMsg()
   return category
-
-# proc getLatestQuestionId(conn: Dbconn): int =
-#   let sqlQuery = sql"SELECT id FROM flashcards ORDER BY id DESC LIMIT 1"
-#   for row in conn.rows(sqlQuery):
-#     let id = row[0].parseInt
-#     return id
-#   return 0  # return 0 if no rows are found
 
 proc saveLastQuestionId*(questionId: int) =
   let f = open("last_question_id.txt", fmWrite)
@@ -138,6 +127,7 @@ proc generateQuestionId*(conn: Dbconn): int =
     of "easy":
       for i in 1..1:
         weightedList.add(id)
+  echo "WeightedList: ", $weightedList
   let randomIndex = rand(0..weightedList.high)
   let selectedID = weightedList[randomIndex]
   return selectedID

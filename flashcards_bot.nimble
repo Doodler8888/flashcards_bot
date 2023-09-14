@@ -10,4 +10,5 @@ bin           = @["flashcards_bot"]
 
 # Dependencies
 
-requires "nim >= 2.0.0"
+requires "nim >= 2.0.0", "db_connector"
+

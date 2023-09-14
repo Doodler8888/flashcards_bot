@@ -1,6 +1,11 @@
-import std/[httpclient, json, os, strutils, times, random], ../pkg/message/reply, ../src/config, db_connector/db_postgres, ../pkg/database/database_connection
+import std/[httpclient, json, os, strutils, times, random], ../pkg/message/reply, #[ ../src/config, ]# db_connector/db_postgres, ../pkg/database/database_connection
 
 proc main() =
+
+  const dbHost = getEnv("DBHOST")
+  const dbUser = getEnv("DBUSER")
+  const dbPassword = getEnv("DBPASSWORD")
+  const dbName = getEnv("DBNAME")
 
   let conn = open(dbHost, dbUser, dbPassword, dbName)
   defer: conn.close()  # The connection will be closed when exiting the current scope.
@@ -16,6 +21,7 @@ proc main() =
   var command = ""
   var callBackCheck = false
   var nextMutationTime: float = 0
+  var randomQuestionId = 0
 
 
   # if testConnection(conn):
@@ -41,10 +47,7 @@ proc main() =
     for update in updates["result"]:
       if questionId == 0:
         questionId = readLastQuestionId()
-        # echo "readLastQuestion activated"
-        # echo "This is questionId: at the start of the loop: " & $questionId
       let updateId = update["update_id"].getInt
-      # echo "This is updateId: " & $updateId
       if "callback_query" in update:
         echo "chatId on callback_query loop check: " & $chatId
         callBackCheck = true
@@ -59,13 +62,9 @@ proc main() =
         elif command == "show category":
           circleButtons(chatIdFromQuery, "Choose Category:", questionId)
         elif parts.len >= 2:
-          # echo "Reached before parsing"
           questionId = parts[1].parseInt
-          # echo "Reached after parsing"
           if command == "show answer trigger":
-            # echo "Currenat question id: " & $questionId
             showAnswer(conn, questionId, chatIdFromQuery)
-            # echo "Button was pressed"
         else:
           echo "Unrecognized callback_data: ", callbackData
       elif "message" in update:
@@ -75,24 +74,20 @@ proc main() =
         case messageText
         of "🔴 Hard":
           echo "Hard was selected"
-          # updateFlashcardCategory(conn, questionId, "hard")
           if questionId != 0:  # Assuming 0 is an invalid value for questionId
-            # echo "This is questionId: " & $questionId
-            updateFlashcardCategory(conn, questionId, "hard")
+            updateFlashcardCategory(conn, randomQuestionId, "hard")
           else:
             echo "questionId is not initialized."
         of "🟡 Medium":
           echo "Medium was selected"
           if questionId != 0:  # Assuming 0 is an invalid value for questionId
-            # echo "This is questionId: " & $questionId
-            updateFlashcardCategory(conn, questionId, "medium")
+            updateFlashcardCategory(conn, randomQuestionId, "medium")
           else:
             echo "questionId is not initialized."
         of "🟢 Easy":
           echo "Easy was selected"
           if questionId != 0:  # Assuming 0 is an invalid value for questionId
-            # echo "This is questionId: " & $questionId
-            updateFlashcardCategory(conn, questionId, "easy")
+            updateFlashcardCategory(conn, randomQuestionId, "easy")
           else:
             echo "questionId is not initialized."
         else:
@@ -104,7 +99,7 @@ proc main() =
               if incomingMessage.startsWith("/add") and not update["message"]["from"]["is_bot"].getBool:
                 questionId = addQuestion(conn, incomingMessage[5..^1])
                 simpleResponse(chatId, "Write your answer:")
-                if not update["message"]["text"].getStr.startsWith("Write"):
+                if not update["message"]["text"].getStr.startsWith("Write") and not update["message"]["from"]["is_bot"].getBool:
                   simpleResponse(chatId, "Write your answer:")
                 questionMessage = true
               elif not incomingMessage.startsWith("/add") and questionMessage:
@@ -112,26 +107,19 @@ proc main() =
                 questionMessage = false
                 simpleResponse(chatId, "Flashcard created")
               elif incomingMessage.startsWith("/ask"):
-                let randomQuestionId = generateQuestionId(conn)
-                # echo "This is a random question id: " & $randomQuestionId
+                randomQuestionId = generateQuestionId(conn)
                 let query = sql"SELECT question FROM flashcards WHERE id = ?"
                 let randomQuestionRow = conn.getRow(query, randomQuestionId)
-                # echo "This is a random question row: ", $randomQuestionRow
-                # echo "Length of randomQuestionRow: ", randomQuestionRow.len
                 if randomQuestionRow.len > 0:
                   let randomQuestion = $randomQuestionRow[0]  
                   echo "chatId when using ask: " & $chatId & " and randomQuestionId: " & $randomQuestionId
                   inlineButton(chatId, randomQuestion, "Show Answer", "Change Category", "Done", randomQuestionId)
-                  # echo "This is a random question: ", randomQuestion
                 else:
                   echo "The query returned an empty row."
               elif incomingMessage.startsWith("/list"):
-                # echo "Showing flashcards..."
                 showFlashcards(conn)
               elif incomingMessage.startsWith("/start"):
                 callBackCheck = false
-              # elif incomingMessage.startsWith("/stop"):
-              #   callBackCheck = true
               elif incomingMessage == "Confirmed":
                 continue
               else:
