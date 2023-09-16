@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment  # Deployment resource is designed to ensure that a specified number of replicas of your application (in this case, your Nim bot) is running within the cluster.
+metadata:
+  name: nim-bot  # The name for the deployment resource.
+spec:  # The specification of the desired behavior of the deployment.
+  replicas: 1  # Number of pod instances that should be running.
+  selector:  # The selector is how the Deployment identifies which pods to manage.
+    matchLabels:  # The Deployment will manage pods that match these labels.
+      app: nim-bot
+  template:  # The template for the pods that will be created by this deployment.
+    metadata:  # Metadata for the pod. Labels specified here will be applied to each pod that is created.
+      labels:
+        app: nim-bot
+    spec:  # The specification of the desired behavior of the pod.
+      containers:  # List of containers to run within the pod.
+      - name: nim-bot
+        image: flashcards_bot:latest  # The Docker image to use for this container.
+        env:
+        - name: DBHOST
+          value: "your-postgres-service-name"
+        # add more environment variables
+
+
+
+# In apiVersion: apps/v1, the apps part refers to the API group that handles 
+# applications-related resources like Deployments, StatefulSets, and DaemonSets.
+# Then, by using the 'kind' field, i specify what exactly i want to use from 
+# the api i've chosen.
